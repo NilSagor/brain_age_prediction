@@ -1,0 +1,119 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brain-age-prediction"
+version = "0.1.0"
+description = "Deep learning framework for brain age prediction from 3D MRI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["brain-age", "mri", "deep-learning", "pytorch", "medical-imaging"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+# Dependencies are managed via requirements.txt, not here
+# This allows pip-compile to handle locking
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "black>=25.0.0",
+    "ruff>=0.11.0",
+    "mypy>=1.15.0",
+]
+
+#[project.urls]
+#Homepage = "https://github.com/yourusername/brain-age-prediction"
+#Repository = "https://github.com/yourusername/brain-age-prediction"
+#Documentation = "https://brain-age-prediction.readthedocs.io"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+exclude = ["tests*", "experiments*", "notebooks*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | experiments
+  | data
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = ["E501"]  # Line too long (handled by black)
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+exclude = ["tests", "experiments", "notebooks"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/experiments/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
