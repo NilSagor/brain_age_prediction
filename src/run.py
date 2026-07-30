@@ -1,4 +1,5 @@
-from src.NeuroFusion.data import ABIDEDataModule
+from NeuroFusion.data_prep.abide_dataset import ABIDEDataModule
+
 
 # For development/validation on ABIDE
 data_module = ABIDEDataModule(
