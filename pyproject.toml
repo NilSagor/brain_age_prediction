@@ -87,7 +87,7 @@ select = [
 ]
 ignore = ["E501"]  # Line too long (handled by black)
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.mypy]

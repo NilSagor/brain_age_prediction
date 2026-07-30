@@ -1,10 +1,10 @@
 # Development Strategy: Baseline vs. NeuroFusion & Unit Testing
 
 ## The Dilemma
-project structure, multiple components (data, NeuroFusion, baselines, ablation, tests), 
- - Should  implement baselines first to establish a performance baseline, or 
- - jump straight into the main NeuroFusion model? 
- 
+project structure, multiple components (data, NeuroFusion, baselines, ablation, tests),
+ - Should  implement baselines first to establish a performance baseline, or
+ - jump straight into the main NeuroFusion model?
+
 
 ---
 
@@ -103,9 +103,9 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
 
 ## Key Takeaway
 
-**Start with the novel contribution (NeuroFusion) – not the baselines.**  
+**Start with the novel contribution (NeuroFusion) – not the baselines.**
 This ensures that main result early and can iterate on it. The baselines are there for comparison, but they are not the core of your project.
 
 **Write unit tests incrementally** – they are not an afterthought. They save time in the long run.
 
-Finally, use the daily log template religiously. 
+Finally, use the daily log template religiously.
