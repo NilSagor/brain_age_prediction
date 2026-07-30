@@ -1,15 +1,6 @@
 # Development Dependencies for Brain Age Project
 # Install: pip install -r requirements/requirements-dev.txt
-# Note: This file includes production deps with hashes, then dev deps without
 
-# ============ Include Production Dependencies (with hashes) ============
-
-
-# ============ Testing (NO hashes - installed separately) ============
-# These are installed without hashes to avoid conflicts
-# If you need full hash verification, compile this file with: pip-compile requirements-dev.in
-# Development Dependencies
-# Install AFTER requirements.txt: pip install -r requirements.txt && pip install -r requirements-dev.txt
 
 # Testing (pinned with ==)
 pytest==8.3.5
