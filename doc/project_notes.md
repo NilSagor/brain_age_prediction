@@ -1,8 +1,10 @@
 # Development Strategy: Baseline vs. NeuroFusion & Unit Testing
 
 ## The Dilemma
-
-You have a solid project structure, multiple components (data, NeuroFusion, baselines, ablation, tests), and you need to decide where to start coding. Should you implement baselines first to establish a performance baseline, or jump straight into the main NeuroFusion model? And when should you write unit tests?
+project structure, multiple components (data, NeuroFusion, baselines, ablation, tests), 
+ - Should  implement baselines first to establish a performance baseline, or 
+ - jump straight into the main NeuroFusion model? 
+ 
 
 ---
 
@@ -14,14 +16,14 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
 
 ### Phase 0: Data Layer (Foundation)
 
-- **What:** Implement `CamCANDataset`, `OASIS3Dataset`, and the corresponding `LightningDataModule`s.
+- **What:** Implement `Abide I & II` (for development fast) and then swapped with  `CamCANDataset`, `OASIS3Dataset`, and the corresponding `LightningDataModule`s.
 - **Why:** Every model (NeuroFusion, baselines, ablation) relies on the same data pipeline. Getting this right early avoids bottlenecks later.
 - **Unit Tests:**
   - Test that the dataset returns the correct shapes and types.
   - Test that the dataloader works with a tiny synthetic dataset.
   - Test that the `DataModule` splits correctly for k‑fold CV.
 
-**Milestone:** You can load a batch of data and see the tensors.
+**Milestone:** can load a batch of data and see the tensors.
 
 ---
 
@@ -36,7 +38,7 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
   - Test forward shape, gradient flow, and deterministic forward pass.
   - Test `compute_loss` and hierarchical supervision.
 
-**Milestone:** You can train a toy model on synthetic data and get a decreasing loss.
+**Milestone:** can train a toy model on synthetic data and get a decreasing loss.
 
 ---
 
@@ -48,7 +50,7 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
   - For each baseline, test forward shape and loss computation.
   - A shared `BaseBaseline` test suite can cover most cases.
 
-**Milestone:** You can run all baselines on the same data splits and get reproducible numbers.
+**Milestone:** can run all baselines on the same data splits and get reproducible numbers.
 
 ---
 
@@ -58,7 +60,7 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
 - **Why:** Ablations are essential for understanding what components matter. They build on top of the core model, so they come after Phase 1.
 - **Unit Tests:** Test each ablation variant’s forward pass and loss; test the runner’s ability to aggregate results.
 
-**Milestone:** You can run all ablation experiments and generate the bar charts from your paper.
+**Milestone:** can run all ablation experiments and generate the bar charts from your paper.
 
 ---
 
@@ -93,7 +95,7 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
 | Day 5   | Baselines (CNN, GNN)         | Implement ResNet, EfficientNet, 3D-CNN, GCN, BrainGNN, BC-GCN with unit tests.  |
 | Day 6   | Baselines (Transformer, MM)  | MFFormer, CTransformer, AMAge‑Net; test on synthetic data.                     |
 | Day 7   | Ablation Framework           | Ablation models, runner, analyzer; test that ablation configs run.             |
-| Day 8   | Integration & OASIS‑3        | OASIS‑3 DataModule; external validation pipeline.                              |
+| Day 8   | Integration & OASIS‑3        | Abide data, OASIS‑3 DataModule; external validation pipeline.                              |
 | Day 9   | Full Experiments             | Run 5‑fold CV for all models; collect results.                                 |
 | Day 10  | Analysis & Visualization     | Generate tables, figures, statistical tests.                                   |
 
@@ -102,8 +104,8 @@ Here’s a phased approach that balances **rapid validation** with **code qualit
 ## Key Takeaway
 
 **Start with the novel contribution (NeuroFusion) – not the baselines.**  
-This ensures that you get your main result early and can iterate on it. The baselines are there for comparison, but they are not the core of your project.
+This ensures that main result early and can iterate on it. The baselines are there for comparison, but they are not the core of your project.
 
-**Write unit tests incrementally** – they are not an afterthought. They save you time in the long run.
+**Write unit tests incrementally** – they are not an afterthought. They save time in the long run.
 
-Finally, use the daily log template religiously. It will keep you focused and provide a rich history for your portfolio and paper.
+Finally, use the daily log template religiously. 
