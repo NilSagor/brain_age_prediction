@@ -5,7 +5,10 @@ from nilearn.datasets import fetch_abide_pcp
 from nilearn.connectome import ConnectivityMeasure
 from typing import Optional, Dict, Tuple
 import pandas as pd
+from torch.utils.data import random_split
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 class ABIDEDataset(Dataset):
     """
@@ -50,27 +53,36 @@ class ABIDEDataset(Dataset):
 
     def _fetch_data(self):
         """Download or load cached ABIDE data using nilearn."""
-        # Fetch ABIDE PCP data
+        # Fetch all subjects (no diagnosis filter)
         self.abide_data = fetch_abide_pcp(
             data_dir=self.data_dir,
             pipeline='cpac',
             band_pass_filtering=self.band_pass,
             global_signal_regression=self.global_signal,
             derivatives=[f'rois_{self.roi_atlas}'],
-            diagnosis='tdc',          # only typical controls
-            age_min=self.age_min,
-            age_max=self.age_max,
             quality_checked=self.quality_checked,
         )
 
-        # Extract ROI time series (list of arrays)
-        self.roi_time_series = self.abide_data.rois_cc200
-        self.phenotypic = self.abide_data.phenotypic
+        # Phenotypic DataFrame
+        pheno = self.abide_data.phenotypic
 
-        # Optionally compute connectivity matrices upfront
-        # We'll compute on the fly to save memory, but we can precompute if desired
-        self.connectivity_measure = ConnectivityMeasure(kind='correlation')
+        # Filter: typical controls (DX_GROUP == 1)
+        tdc_mask = pheno['DX_GROUP'] == 1
 
+        # Filter: age range
+        age_mask = (pheno['AGE_AT_SCAN'] >= self.age_min) & (pheno['AGE_AT_SCAN'] <= self.age_max)
+
+        final_mask = tdc_mask & age_mask
+
+        # Apply masks
+        pheno_filtered = pheno[final_mask].reset_index(drop=True)
+        roi_series = self.abide_data.rois_cc200
+        roi_filtered = [roi_series[i] for i in range(len(roi_series)) if final_mask.iloc[i]]
+
+        self.phenotypic = pheno_filtered
+        self.roi_time_series = roi_filtered
+
+        print(f"Retained {len(self.roi_time_series)} typical controls aged {self.age_min}–{self.age_max}.")
     def __len__(self):
         return len(self.roi_time_series)
 
@@ -88,13 +100,12 @@ class ABIDEDataset(Dataset):
         # Return as dictionary
         item = {
             'age': torch.tensor(age, dtype=torch.float32),
-            'fMRI': torch.from_numpy(corr).float(),  # (R, R)
+            'fMRI': torch.from_numpy(corr).float(),
+            'sub_id': str(self.phenotypic.iloc[idx]['SUB_ID']),
+            'site': str(self.phenotypic.iloc[idx]['SITE_ID']),
         }
 
-        # Optional: include subject ID and site for analysis
-        item['sub_id'] = str(self.phenotypic.iloc[idx]['SUB_ID'])
-        item['site'] = str(self.phenotypic.iloc[idx]['SITE_ID'])
-
+      
         if self.transform:
             item = self.transform(item)
 
@@ -108,7 +119,7 @@ class ABIDEDataModule:
     """
     def __init__(
         self,
-        data_dir: str = './abide_data',
+        data_dir: str = './data/abide_data',
         batch_size: int = 8,
         num_workers: int = 4,
         age_min: int = 18,
@@ -137,8 +148,7 @@ class ABIDEDataModule:
         self.val_dataset = None
         self.test_dataset = None
 
-    def setup(self, stage=None):
-        from torch.utils.data import random_split
+    def setup(self, stage=None):       
 
         self.dataset = ABIDEDataset(
             data_dir=self.data_dir,
@@ -154,7 +164,7 @@ class ABIDEDataModule:
         n_val = int(n * self.val_split)
         n_test = n - n_train - n_val
 
-        # Fixed seed for reproducibility
+        
         generator = torch.Generator().manual_seed(self.seed)
         self.train_dataset, self.val_dataset, self.test_dataset = random_split(
             self.dataset,
