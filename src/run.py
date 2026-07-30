@@ -3,7 +3,7 @@ from NeuroFusion.data_prep.abide_dataset import ABIDEDataModule
 
 # For development/validation on ABIDE
 data_module = ABIDEDataModule(
-    data_dir='./abide_data',
+    data_dir='./data/abide_data',
     batch_size=8,
     age_min=18,
     age_max=64,
