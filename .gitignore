@@ -61,6 +61,7 @@ wandb/
 
 doc/exp_log/
 **/*.local.md
+private/
 
 # OS
 .DS_Store
