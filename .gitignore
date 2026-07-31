@@ -59,6 +59,9 @@ logs/
 *.log
 wandb/
 
+doc/exp_log/
+**/*.local.md
+
 # OS
 .DS_Store
 Thumbs.db
