@@ -111,7 +111,7 @@ class VisionTransformer3D(nn.Module):
         ])
 
         self.norm = nn.LayerNorm(config.embed_dim)
-        self.init_weights()
+        self._init_weights()
 
     def _init_weights(self):
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
@@ -126,7 +126,7 @@ class VisionTransformer3D(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x:torch.Tensor, return_intermediate:bool=True)->Tuple[torch.Tensor, List[torch.Tensor]]:
+    def forward(self, x:torch.Tensor, return_intermediate:bool=True)->Tuple[torch.Tensor, List[torch.Tensor], torch.Tensor]:
         # x: (B, 1, D, H, W)
         x = self.patch_embed(x) # (B, N, embed_dim)
         x = x + self.pos_embed
@@ -143,4 +143,5 @@ class VisionTransformer3D(nn.Module):
 
         # Global pooling
         pooled = x.mean(dim=1) # (B, embed_dim)
+
         return pooled, intermediate_features, x
