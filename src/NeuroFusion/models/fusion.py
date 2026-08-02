@@ -20,13 +20,22 @@ class MultiHeadCrossAttention(nn.Module):
         self.out_proj = nn.Linear(embed_dim, embed_dim)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, structural: torch.Tensor, functional:torch.Tensor) )->torch.Tensor:
+    def forward(
+            self, 
+            structural: torch.Tensor, 
+            functional:torch.Tensor,
+            mask: Optional[torch.Tensor] = None
+        )->Tuple[torch.Tensor, torch.Tensor]:
 
         # structural: (B, N_s, embed_dim) or (B, 1, embed_dim) if pooled
         # functional: (B, N_f, embed_dim) or (B, 1, embed_dim) if pooled
-
+        # mask: (B, N_s, N_f) or (B, 1, N_f) if pooled optional attention  mask
         if structural.dim() == 2:
             structural = structural.unsqueeze(1)  # (B, 1, embed_dim)
+            was_pooled = True
+        else:
+            was_pooled = False
+
         if functional.dim() == 2:
             functional = functional.unsqueeze(1)  # (B, 1, embed_dim)
 
@@ -44,11 +53,18 @@ class MultiHeadCrossAttention(nn.Module):
         attn = (q @ k.transpose(-2, -1)) * self.scale  # (B, num_heads, N_q, N_kv)
 
         if mask is not None:
+            if mask.dim() == 3:
+                mask = mask.unsqueeze(1) # (B, 1, N_q, N_kv)
+            if mask.shape[1] == 1 and self.num_heads > 1:
+                mask = mask.expand(-1, self.num_heads, -1, -1)  # (B, num_heads, N_q, N_kv)
+            
             attn = attn.masked_fill(mask == 0, float('-inf'))
 
         attn = F.softmax(attn, dim=-1)
         attn = self.dropout(attn)
+
         out = (attn @ v).transpose(1, 2).contiguous().view(B, N_q, self.embed_dim)  # (B, N_q, embed_dim)
+        out = self.out_proj(out)
         out = self.dropout(out)
 
         # if input was pooled, return pooled output as well 
@@ -56,7 +72,7 @@ class MultiHeadCrossAttention(nn.Module):
             pooled_output = out.mean(dim=1, keepdim=True)
             return out, pooled_output
         else:
-            return out
+            return out, None
 
 
 class GatedFusion(nn.Module):
@@ -72,30 +88,45 @@ class GatedFusion(nn.Module):
         )
         
 
-    def forward(self, structural: torch.Tensor, functional: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]  :
+    def forward(
+            self, 
+            structural: torch.Tensor, 
+            functional: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         # structural: (B, N, embed_dim)
         # functional: (B, N, embed_dim)
         combined = torch.cat([structural, functional], dim=-1)  # (B, N, 2*embed_dim)
-        gate = self.sigmoid(self.gate(combined))  # (B, N, embed_dim)
+        gate = self.gate(combined)  # (B, N, embed_dim)
         fused = gate * structural + (1 - gate) * functional  # (B, N, embed_dim)
         return fused, gate 
 
 class HierarchicalFusionBlock(nn.Module):
-    def __init__(self, feature_dim:int, num_heads:int=8, hidden_dim:Optional[int]=None):
+    def __init__(
+            self, 
+            feature_dim:int, 
+            num_heads:int=8, 
+            hidden_dim:Optional[int]=None
+            ):
         super().__init__()
         self.gated_fusion = GatedFusion(feature_dim, hidden_dim)
         self.cross_attention = MultiHeadCrossAttention(feature_dim)
         self.norm = nn.LayerNorm(feature_dim)
 
 
-    def forward(self, structural: torch.Tensor, functional: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+            self, 
+            structural: torch.Tensor, 
+            functional: torch.Tensor
+        ) -> Tuple[torch.Tensor, torch.Tensor]:
         # structural: (B, N, embed_dim) or (B, 1, embed_dim) if pooled
         # functional: (B, N, embed_dim) or (B, 1, embed_dim) if pooled
         
         
-
+        # Cross attention: structural queries functional
+        attended, _ = self.cross_attention(structural, functional)
         # First apply gated fusion
-        fused, gate = self.gated_fusion(structural, functional)
+        fused, gate = self.gated_fusion(structural, attended)
+        fused = self.norm(fused +structural)
+
         # Then apply cross attention
-        attended, pooled_output = self.cross_attention(fused, fused)
-        return attended, pooled_output       
+        return fused, gate       
