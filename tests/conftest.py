@@ -18,6 +18,12 @@ from NeuroFusion.models.vit3d import (
     VisionTransformer3D
 )
 
+from NeuroFusion.models.fusion import (
+    MultiHeadCrossAttention,
+    GatedFusion,
+    HierarchicalFusionBlock
+)
+
 
 @dataclass
 class Config:
@@ -30,8 +36,11 @@ class Config:
     mlp_ratio: float = 4.0 
     num_layers: int = 6
     dropout: float = 0.1
+    # fusion parameters
+    fusion_dim: int = 64
     cross_attention: bool = True
     cross_attention_heads: int = 4
+
     structural_stages: list[int] = None
 
     # gat parameters
@@ -129,4 +138,34 @@ def sample_adj_matrix():
     num_nodes = 10
     adj = torch.randint(0, 2, (batch_size, num_nodes, num_nodes)).float()
     return adj
+
+
+# Hierachical Fusion Fixtures
+@pytest.fixture
+def get_multihead_cross_attention(model_config):
+    return MultiHeadCrossAttention(
+        embed_dim=model_config.embed_dim,
+        num_heads=model_config.num_heads,
+        dropout=model_config.dropout
+    )
+
+
+@pytest.fixture
+def get_gated_fusion(model_config):
+    return GatedFusion(
+        feature_dim=model_config.embed_dim,
+        hidden_dim=model_config.embed_dim // 2
+    )
+
+
+@pytest.fixture
+def get_hierarchical_fusion_block(model_config):
+    return HierarchicalFusionBlock(
+        feature_dim=model_config.embed_dim,
+        num_heads=model_config.num_heads,
+        hidden_dim=model_config.embed_dim // 2
+    )
+
+
+
 
