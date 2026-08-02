@@ -25,9 +25,11 @@ class PatchEmbed3D(nn.Module):
 
 class Attention3D(nn.Module):
     def __init__(self, dim:int, num_heads:int=12, qkv_bias:bool=True, attn_drop:float=0.0, proj_drop=0.0):
+        super().__init__()
         self.num_heads = num_heads
-        self.head_dim = dim/num_heads
+        self.head_dim = dim // num_heads
         self.scale = self.head_dim**-0.5
+
         self.qkv = nn.Linear(dim, dim*3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
@@ -49,12 +51,13 @@ class Attention3D(nn.Module):
 
 
 class Mlp3D(nn.Module):
-    def __init__(self, in_features:int, hidden_feature:Optional[int]=None, out_features: Optional[int]=None, act_layer:nn.Module=nn.GELU, drop:float=0.0):
+    def __init__(self, in_features:int, hidden_features:Optional[int]=None, out_features: Optional[int]=None, act_layer:nn.Module=nn.GELU, drop:float=0.0):
         super().__init__()
         out_features = out_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_feature)
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_feature, out_features)
+        self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
     def forward(self, x:torch.Tensor)->torch.Tensor:
@@ -80,7 +83,7 @@ class Block3D(nn.Module):
 
 
 class VisionTransformer3D(nn.Module):
-    def __init__(self, config: 'ModelConfig'):
+    def __init__(self, config):
         super().__init__()
         self.config = config
         self.num_features = config.embed_dim
@@ -132,11 +135,15 @@ class VisionTransformer3D(nn.Module):
         x = x + self.pos_embed
         x = self.pos_drop(x)
 
+        
+        
+
         intermediate_features = []
         for i, block in enumerate(self.blocks):
             x = block(x)
             layer_idx = i+1
-            if return_intermediate and layer_idx in self.config.structural_stages:
+            structural_stages = self.config.structural_stages or []
+            if return_intermediate and layer_idx in structural_stages:
                 intermediate_features.append(self.norm(x))
 
         x = self.norm(x)
