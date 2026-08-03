@@ -1,6 +1,9 @@
 # Run all tests with coverage
 pytest tests/ -v --cov=src --cov=neurofusion --cov-report=html
 
+# Run tests
+pytest tests/ --collect-only -q
+
 # Run unit tests only
 pytest tests/unit/ -v
 
