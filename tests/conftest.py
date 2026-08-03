@@ -4,6 +4,8 @@ from typing import Optional
 import pytest
 import torch 
 
+
+
 from NeuroFusion.models.gat import (
     GraphAttentionNetwork,
     GraphAttentionLayer,
@@ -24,40 +26,75 @@ from NeuroFusion.models.fusion import (
     HierarchicalFusionBlock
 )
 
+from NeuroFusion.config import ModelConfig, TrainingConfig
 
-@dataclass
-class Config:
-    # vit parameters
-    img_size: int = 32
-    patch_size: int = 4
-    in_channels: int = 1
-    embed_dim: int = 64
-    num_heads: int = 4
-    mlp_ratio: float = 4.0 
-    num_layers: int = 6
-    dropout: float = 0.1
-    # fusion parameters
-    fusion_dim: int = 64
-    cross_attention: bool = True
-    cross_attention_heads: int = 4
+from NeuroFusion.models.neurofusion import NeuroFusion
 
-    structural_stages: list[int] = None
 
-    # gat parameters
-    node_features: int = 8
-    gat_hidden_dim: int = 16
-    gat_out_dim: int = 12
-    gat_num_layers: int = 3
-    gat_num_heads: int = 4
-    gat_dropout: float = 0.1
-    fusion_dim: int = 10
-    functional_stages: list[int] = None
+@pytest.fixture
+def model_config():
+    return ModelConfig(
+        # ViT parameters
+        img_size=32,
+        patch_size=4,
+        in_channels=1,
+        embed_dim=64,
+        num_heads=4,
+        mlp_ratio=4.0,
+        num_layers=6,
+        dropout=0.1,
+        # GAT parameters
+        num_nodes=8,
+        node_features=8,
+        gat_hidden_dim=16,
+        gat_num_layers=3,
+        gat_num_heads=4,
+        gat_dropout=0.1,
+        # Fusion
+        fusion_dim=32,               
+        cross_attn_heads=4,
+        # Hierarchical stages
+        structural_stages=[2, 4, 6],
+        functional_stages=[1, 2, 3],
+        # Auxiliary weights
+        aux_weights=[0.3, 0.5, 0.7],        
+    )
 
-    def __post_init__(self):
-        if self.functional_stages is None:
-            self.functional_stages = list(range(1, self.gat_num_layers + 1))
-        if self.structural_stages is None:          
-            self.structural_stages = [2,4,6]  # Example stages for structural features  
+
+# @dataclass
+# class Config:
+#     # vit parameters
+#     img_size: int = 32
+#     patch_size: int = 4
+#     in_channels: int = 1
+#     embed_dim: int = 64
+#     num_heads: int = 4
+#     mlp_ratio: float = 4.0 
+#     num_layers: int = 6
+#     dropout: float = 0.1
+#     # fusion parameters
+#     fusion_dim: int = 64
+#     cross_attention: bool = True
+#     cross_attention_heads: int = 4
+
+#     structural_stages: list[int] = None
+
+#     # gat parameters
+#     node_features: int = 8
+#     gat_hidden_dim: int = 16
+#     gat_out_dim: int = 12
+#     gat_num_layers: int = 3
+#     gat_num_heads: int = 4
+#     gat_dropout: float = 0.1
+#     fusion_dim: int = 10
+#     functional_stages: list[int] = None
+
+    # def __post_init__(self):
+    #     if self.functional_stages is None:
+    #         self.functional_stages = list(range(1, self.gat_num_layers + 1))
+    #     if self.structural_stages is None:          
+    #         self.structural_stages = [2,4,6]  # Example stages for structural features  
+
 
 # ==== utility fixtures for testing ====
 @pytest.fixture
@@ -76,9 +113,9 @@ def seed_fixture():
 
 
 # ======= model configuration fixture
-@pytest.fixture
-def model_config():
-    return Config()
+# @pytest.fixture
+# def model_config():
+#     return Config()
 
 
 @pytest.fixture
@@ -168,4 +205,25 @@ def get_hierarchical_fusion_block(model_config):
 
 
 
+# ============ NeuroFusion ===============
+@pytest.fixture
+def training_config():
+    return TrainingConfig(learning_rate=1e-4, weight_decay=1e-5)
 
+@pytest.fixture
+def neurofusion_model(model_config):
+    return NeuroFusion(model_config)
+
+@pytest.fixture
+def batch_data(model_config):
+    def _make_batch(batch_size=2):
+        return {
+            'sMRI': torch.randn(batch_size, 1, model_config.img_size,
+                                model_config.img_size, model_config.img_size),
+            'fMRI': torch.randn(batch_size, model_config.num_nodes,
+                                model_config.node_features),
+            'age': torch.randint(20, 80, (batch_size,)).float(),
+            'adj': torch.randint(0, 2, (batch_size, model_config.num_nodes,
+                                        model_config.num_nodes)).float()
+        }
+    return _make_batch
