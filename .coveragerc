@@ -1,6 +1,6 @@
 # .coveragerc
 [run]
-source = src,neurofusion
+source = src,NeuroFusion
 omit = 
     tests/*
     */__init__.py
